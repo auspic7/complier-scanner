@@ -28,22 +28,21 @@ class DFA(Automata):
     def process(self, input_alphabet):
         for char in input_alphabet:
             if char not in self.alphabet:
-                print(f'{self.name}|{char}: undefined alphabet')
+                # print(f'{self.name}|{char}: undefined alphabet')
                 self.life = Life.DEAD
                 return self.life
 
             if self.life == Life.DEAD:
-                print(f'{self.name}|{char}: automata dead')
+                # print(f'{self.name}|{char}: automata dead')
                 return self.life
 
             for transition_function in self.transition_functions:
                 if transition_function[0] == self.state and char in transition_function[1]:
                     self.state = transition_function[2]
-                    print(
-                        f'{self.name}|{transition_function[0]} ---{char}---> {"("+str(self.state)+")" if self.isfinal() else self.state}')
+                    # print(f'{self.name}|{transition_function[0]} ---{char}---> {"("+str(self.state)+")" if self.isfinal() else self.state}')
                     return self.life
             else:
-                print(f'{self.name}|{char}: function undefined')
+                # print(f'{self.name}|{char}: function undefined')
                 self.life = Life.DEAD
                 return self.life
 
