@@ -19,7 +19,7 @@ Lexical analyzer
 
 5. good luck
 
-#Usage
+# Usage
 ```shell script
 lexical_analyzer.py [-h] [-v] [-l] input_file_name
 
