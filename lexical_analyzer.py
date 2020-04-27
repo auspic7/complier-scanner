@@ -1,40 +1,13 @@
-import string, copy
-from Automata import DFA, generate_dfa_out_of_list, Life
+import argparse
+from Automata import Life
+from PredefinedDFA import DFAs
+from tabulate import tabulate
 
-positive = '123456789'
-INT = DFA(string.digits + "-",
-          [(0, '0', 1), (0, positive, 3), (0, '-', 2), (2, positive, 3), (3, string.digits, 3)], 0, [1, 3])
-FLOAT = DFA(string.digits + '-.', [(0, '-', 1), (0, '0', 2), (0, positive, 3), (1, '0', 2), (1, positive, 3),
-                                   (3, string.digits, 3), (3, '.', 4), (2, '.', 4), (4, string.digits, 5),
-                                   (5, positive, 5), (5, '0', 6), (6, positive, 5), (6, '0', 6), (5, positive, 5)], 0, [5])
-STRING = DFA(string.digits + string.ascii_letters + ' ' + '"',
-             [(0, '"', 1), (1, string.digits + string.ascii_letters + ' ', 1), (1, '"', 2)], 0, [2])
-ID = DFA(string.ascii_letters + string.digits + '_',
-         [(0, string.ascii_letters + '_', 1), (1, string.ascii_letters + string.digits + '_', 1)], 0, [1])
-WHITESPACE = DFA('\t\n ', [(0, '\t\n ', 1), (1, '\t\n ', 1)], 0, [1])
-
-TYPE = generate_dfa_out_of_list(['int', 'char', 'float', 'bool'])
-BOOLEAN = generate_dfa_out_of_list(['true', 'false'])
-KEYWORD = generate_dfa_out_of_list(['if', 'else', 'while', 'for', 'return'])
-ARITHMETIC = generate_dfa_out_of_list(['+', '-', '*', '/'])
-BITWISE = generate_dfa_out_of_list(['<<', '>>', '&', '|'])
-ASSIGNMENT = generate_dfa_out_of_list(['='])
-COMPARISON = generate_dfa_out_of_list(['<', '>', '==', '!=', '<=', '>='])
-SEMICOLON = generate_dfa_out_of_list([';'])
-BRACE = generate_dfa_out_of_list(['{', '}'])
-PARENTHESES = generate_dfa_out_of_list(['(', ')'])
-SEPARATOR = generate_dfa_out_of_list([','])
-
-DFAs = [INT, FLOAT, STRING, WHITESPACE, TYPE, BOOLEAN, KEYWORD, ARITHMETIC, BITWISE, ASSIGNMENT, COMPARISON, SEMICOLON,
-        BRACE, PARENTHESES, SEPARATOR, ID]
-names = ['INT', 'FLOAT', 'STRING', 'WHITESPACE', 'TYPE', 'BOOLEAN', 'KEYWORD', 'ARITHMETIC', 'BITWISE', 'ASSIGNMENT',
-         'COMPARISON', 'SEMICOLON', 'BRACE', 'PARENTHESES', 'SEPARATOR', 'ID']
-for (dfa, name) in zip(DFAs, names):
-    dfa.name = name
-
-file = open('input.c')
-file_inp = file.read()
-print(file_inp)
+parser = argparse.ArgumentParser()
+parser.add_argument('input_file_name', help='Desired file name to analyze', type=str)
+parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
+parser.add_argument('-l', '--list', help='list shaped output for module use', action="store_true")
+args = parser.parse_args()
 
 
 def print_error(text, i):
@@ -87,9 +60,10 @@ def lexically_analyze(string_to_scan, dfa_list):
             for dfa in dfa_list:
                 dfa.setstate(0)
             continue
-        print([item.name for item in alive_dfa])
-        print([item.name for item in final_dfa])
-        print(lexemes)
+        if args.verbose:
+            print(f'alive_dfa({string_to_scan[i]}): {[item.name for item in alive_dfa]}')
+            print(f'final_dfa({string_to_scan[i]}): {[item.name for item in final_dfa]}')
+            print(f'lexemes({string_to_scan[i]}): {lexemes}')
         i += 1
 
     # 마지막 토큰을 parse할 수 없는 경우
@@ -100,7 +74,23 @@ def lexically_analyze(string_to_scan, dfa_list):
     lexemes.append((string_to_scan[lexeme_start:lexeme_end + 1], determined_dfa.name))
     return lexemes
 
+# 파일 입력
+file = open(args.input_file_name)
+file_txt = file.read()
+if args.verbose:
+    print(file_txt)
 
-print("\n".join(map(str, lexically_analyze(file_inp, DFAs))))
+# 토큰 분석
+tokens = lexically_analyze(file_txt, DFAs)
 
-# Arithmatic operation: 마이너스인가? 빼기인가? 이것을 scanner가 해결 가능?
+# 에러 없는 경우
+if tokens:
+    # 인자 주어진 경우 그대로 출력
+    if args.list:
+        print(tokens)
+    else:
+        # 표로 만들어서 출력
+        escaped = [(repr(token[0]), token[1]) for token in tokens]
+        print(tabulate(tokens, ('opt_value', 'token_name'), "fancy_grid"))
+else:
+    exit(2)
