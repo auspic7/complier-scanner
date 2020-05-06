@@ -63,6 +63,7 @@ class DFA(Automata):
         self.state = state
         self.life = Life.ALIVE
 
+
 # utility function generates dfa out of list of lexemes can be accepted
 def generate_dfa_out_of_list(lexemes):
     # flatten list and generate alphabet

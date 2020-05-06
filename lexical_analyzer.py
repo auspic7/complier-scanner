@@ -1,6 +1,6 @@
 import argparse
 from Automata import Life
-from PredefinedDFA import DFAs
+from PredefinedDFA import DFAs, DFAs_solution
 from tabulate import tabulate
 
 parser = argparse.ArgumentParser()
@@ -88,6 +88,8 @@ if args.verbose:
 
 # lexical analyze
 tokens = lexically_analyze(file_txt, DFAs)
+# tokens = lexically_analyze(file_txt, DFAs_solution)
+# if you want to parse token with no ambiguity then uncomment
 
 # have no error
 if tokens:
@@ -97,5 +99,6 @@ if tokens:
         # make a fancy table to represent output
         # escaped = [(repr(token[0]), token[1]) for token in tokens]
         print(tabulate(tokens, ('opt_value', 'token_name'), "fancy_grid"))
+# have error
 else:
     exit(2)

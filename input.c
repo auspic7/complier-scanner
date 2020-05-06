@@ -13,3 +13,4 @@ int func (char c, bool b, float f){
 }
 Ture___r
 0 1 22 123 56 001 "asdfagwet"
+0.5, -0.0, -10.0, 100.00001
