@@ -1,4 +1,5 @@
 import argparse
+import os
 from Automata import Life
 from PredefinedDFA import DFAs, DFAs_solution
 from tabulate import tabulate
@@ -7,17 +8,23 @@ parser = argparse.ArgumentParser()
 parser.add_argument('input_file_name', help='Desired file name to analyze', type=str)
 parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
 parser.add_argument('-l', '--list', help='list shaped output for module use', action="store_true")
+parser.add_argument('-s', '--solution', help='use solution dfa list to resolve ambiguity problem', action="store_true")
 args = parser.parse_args()
 
 
+def print_and_write(file, string):
+    print(string)
+    file.write(string+"\n")
+
+
 # function for printing error message
-def print_error(text, i):
+def print_error(file, text, i):
     line_no = text[:i].count('\n') + 1
     line_starting = text[:i].rfind('\n')
-    print(f'error occurred on line {line_no}')
-    print(f'{text.splitlines()[line_no-1]}')
-    print(' ' * (i - line_starting - 1) + '^')
-    print('unexpected character')
+    print_and_write(file_out, f'error occurred on line {line_no}')
+    print_and_write(file_out, f'{text.splitlines()[line_no-1]}')
+    print_and_write(file_out, ' ' * (i - line_starting - 1) + '^')
+    print_and_write(file_out, 'unexpected character')
     return
 
 
@@ -51,10 +58,11 @@ def lexically_analyze(string_to_scan, dfa_list):
             # which means string from lexeme_start cannot be parsed with dfa provided
             if not determined_dfa:
                 # print error message
-                print_error(string_to_scan, i)
+                print_error(file, string_to_scan, i)
                 return
             # every dfa halted, and some lexeme was able to parsed. so parse it and add to list
-            lexemes.append((string_to_scan[lexeme_start:lexeme_end + 1], determined_dfa.name))
+            if not determined_dfa.name == "WHITESPACE":
+                lexemes.append((string_to_scan[lexeme_start:lexeme_end + 1], determined_dfa.name, determined_dfa.state))
             # starting point of next token will be ending point of last token + 1
             i = lexeme_start = lexeme_end + 1
             # initialization, revive every dfa and remove candidate dfa since we read nothing
@@ -64,41 +72,45 @@ def lexically_analyze(string_to_scan, dfa_list):
             continue
         # verbose output
         if args.verbose:
-            print(f'alive_dfa({string_to_scan[i]}): {[item.name for item in alive_dfa]}')
-            print(f'final_dfa({string_to_scan[i]}): {[item.name for item in final_dfa]}')
-            print(f'lexemes({string_to_scan[i]}): {lexemes}')
+            print_and_write(file_out, f'alive_dfa({string_to_scan[i]}): {[item.name for item in alive_dfa]}')
+            print_and_write(file_out, f'final_dfa({string_to_scan[i]}): {[item.name for item in final_dfa]}')
+            print_and_write(file_out, f'lexemes({string_to_scan[i]}): {lexemes}')
         # read next character
         i += 1
 
     # could not parse last lexeme
     if not determined_dfa:
         # print error
-        print_error(string_to_scan, i)
+        print_error(file, string_to_scan, i)
         return
     # add last lexeme to the list
-    lexemes.append((string_to_scan[lexeme_start:lexeme_end + 1], determined_dfa.name))
+    if not determined_dfa.name == "WHITESPACE":
+        lexemes.append((string_to_scan[lexeme_start:lexeme_end + 1], determined_dfa.name, determined_dfa.state))
     return lexemes
 
 
 # file input
 file = open(args.input_file_name)
+file_out = open(os.path.splitext(args.input_file_name)[0]+".out", "w")
 file_txt = file.read()
 if args.verbose:
-    print(file_txt)
+    print_and_write(file_out, file_txt)
 
 # lexical analyze
-tokens = lexically_analyze(file_txt, DFAs)
-# tokens = lexically_analyze(file_txt, DFAs_solution)
-# if you want to parse token with no ambiguity then uncomment
+if not args.solution:
+    tokens = lexically_analyze(file_txt, DFAs)
+else:
+    tokens = lexically_analyze(file_txt, DFAs_solution)
 
 # have no error
 if tokens:
     if args.list:
-        print(tokens)
+        print_and_write(file_out, tokens)
     else:
         # make a fancy table to represent output
-        # escaped = [(repr(token[0]), token[1]) for token in tokens]
-        print(tabulate(tokens, ('opt_value', 'token_name'), "fancy_grid"))
+        tabulated = tabulate(tokens, ('opt_value', 'token_name', 'state'), "fancy_grid")
+        print_and_write(file_out, tabulated)
+
 # have error
 else:
     exit(2)
